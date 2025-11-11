@@ -94,12 +94,7 @@ docker ps  # Should not error
 
 ```bash
 # Build and push Docker image
-./scripts/build-and-push.sh
-
-# Deploy infrastructure
-cd terraform
-terraform init
-terraform apply -auto-approve
+./scripts/deploy.sh
 ```
 
 ### 4. Test
