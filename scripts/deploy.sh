@@ -33,20 +33,26 @@ docker ps >/dev/null 2>&1 || { echo "Error: Docker is not running"; exit 1; }
 echo "✓ Docker is running"
 echo ""
 
-# Step 1: Build and push Docker image
-echo "Step 1: Building and pushing Docker image to ECR..."
-cd "$PROJECT_ROOT"
-bash scripts/build-and-push.sh
-echo ""
-
-# Step 2: Initialize Terraform
-echo "Step 2: Initializing Terraform..."
+# Step 1: Initialize Terraform
+echo "Step 1: Initializing Terraform..."
 cd "$PROJECT_ROOT/terraform"
 terraform init
 echo ""
 
-# Step 3: Deploy infrastructure
-echo "Step 3: Deploying infrastructure with Terraform..."
+# Step 2: Create base infrastructure (ECR, SQS, DynamoDB)
+echo "Step 2: Creating base infrastructure (ECR, SQS, DynamoDB)..."
+terraform apply -target=module.infrastructure -auto-approve
+echo ""
+
+# Step 3: Build and push Docker image
+echo "Step 3: Building and pushing Docker image to ECR..."
+cd "$PROJECT_ROOT"
+bash scripts/build-and-push.sh
+echo ""
+
+# Step 4: Deploy remaining infrastructure (Lambda, API Gateway, S3)
+echo "Step 4: Deploying Lambda functions, API Gateway, and Web App..."
+cd "$PROJECT_ROOT/terraform"
 terraform apply -auto-approve
 echo ""
 
