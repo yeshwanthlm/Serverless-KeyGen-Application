@@ -1,5 +1,7 @@
 # Serverless Key Generator
 
+<img width="946" height="848" alt="Screenshot 2025-11-11 at 7 27 06 PM" src="https://github.com/user-attachments/assets/046d75bc-7909-42d1-be81-dc3c61713f4d" />
+
 A fully serverless SSH and API key generation service built on AWS using Terraform. Generate RSA, Ed25519, and ECDSA keys on-demand with automatic expiration.
 
 ## Architecture
