@@ -33,15 +33,20 @@ docker ps >/dev/null 2>&1 || { echo "Error: Docker is not running"; exit 1; }
 echo "✓ Docker is running"
 echo ""
 
-# Step 1: Initialize Terraform
-echo "Step 1: Initializing Terraform..."
+# Step 1: Build and push Docker image
+echo "Step 1: Building and pushing Docker image to ECR..."
+cd "$PROJECT_ROOT"
+bash scripts/build-and-push.sh
+echo ""
+
+# Step 2: Initialize Terraform
+echo "Step 2: Initializing Terraform..."
 cd "$PROJECT_ROOT/terraform"
 terraform init
 echo ""
 
-# Step 2: Deploy everything (Terraform will build Docker image automatically)
-echo "Step 2: Deploying infrastructure..."
-echo "Note: This will build and push the Docker image automatically"
+# Step 3: Deploy infrastructure
+echo "Step 3: Deploying infrastructure with Terraform..."
 terraform apply -auto-approve
 echo ""
 
