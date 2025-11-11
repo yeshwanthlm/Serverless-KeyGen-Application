@@ -50,7 +50,7 @@
             font-weight: 500;
         }
         
-        select {
+        select, input[type="datetime-local"] {
             width: 100%;
             padding: 12px;
             border: 2px solid #e0e0e0;
@@ -59,9 +59,13 @@
             transition: border-color 0.3s;
         }
         
-        select:focus {
+        select:focus, input[type="datetime-local"]:focus {
             outline: none;
             border-color: #667eea;
+        }
+        
+        input[type="datetime-local"] {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
         
         button {
@@ -198,6 +202,14 @@
             </select>
         </div>
         
+        <div class="form-group">
+            <label for="expiresAt">Key Expiration (Optional - UTC):</label>
+            <input type="datetime-local" id="expiresAt" placeholder="Leave empty for no expiration">
+            <small style="color: #666; display: block; margin-top: 5px;">
+                Set when this key should expire. Time is in UTC.
+            </small>
+        </div>
+        
         <button id="generateBtn" onclick="generateKey()">
             Generate Keypair
         </button>
@@ -238,6 +250,7 @@
             const btn = document.getElementById("generateBtn");
             const keySection = document.getElementById("keySection");
             const select = document.getElementById("keyType").value;
+            const expiresAtInput = document.getElementById("expiresAt").value;
             
             // Parse selection
             const parts = select.split("-");
@@ -250,6 +263,13 @@
                 requestBody.key_bits = parseInt(param);
             } else if (keyType === "ecdsa") {
                 requestBody.curve = `$${param}-$${parts[2]}`;
+            }
+            
+            // Add expiration if provided
+            if (expiresAtInput) {
+                // Convert local datetime to UTC ISO format
+                const localDate = new Date(expiresAtInput);
+                requestBody.expires_at = localDate.toISOString();
             }
             
             // Disable button and show loading
@@ -304,6 +324,9 @@
                             metadata += ` | Curve: $${resultData.curve}`;
                         }
                         metadata += ` | Generated: $${new Date(resultData.generated_at).toLocaleString()}`;
+                        if (resultData.expires_at) {
+                            metadata += ` | Expires: $${new Date(resultData.expires_at).toLocaleString()} UTC`;
+                        }
                         metadata += ` | Fingerprint: $${resultData.fingerprint}`;
                         
                         document.getElementById("metadata").textContent = metadata;

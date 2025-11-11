@@ -15,7 +15,7 @@ logger.setLevel(logging.INFO)
 dynamodb = boto3.resource("dynamodb")
 table = dynamodb.Table(os.environ["DYNAMODB_TABLE"])
 
-def generate_keypair(key_type, key_bits=2048, curve="P-256"):
+def generate_keypair(key_type, key_bits=2048, curve="P-256", expires_at=None):
     """
     Generate SSH keypair based on specified type.
     Returns (public_key_str, private_key_str, fingerprint)
@@ -49,7 +49,11 @@ def generate_keypair(key_type, key_bits=2048, curve="P-256"):
         encoding=serialization.Encoding.OpenSSH,
         format=serialization.PublicFormat.OpenSSH
     )
-    public_key_str = public_key_bytes.decode()
+    public_key_str = public_key_bytes.decode().strip()
+    
+    # Add expiration comment to public key
+    if expires_at:
+        public_key_str = f"{public_key_str} expires={expires_at}"
     
     # Generate private key in PEM format
     private_key_bytes = private_key.private_bytes(
@@ -58,6 +62,13 @@ def generate_keypair(key_type, key_bits=2048, curve="P-256"):
         encryption_algorithm=serialization.NoEncryption()
     )
     private_key_str = private_key_bytes.decode()
+    
+    # Add expiration comment to private key
+    if expires_at:
+        private_key_lines = private_key_str.strip().split('\n')
+        # Insert comment after the BEGIN line
+        private_key_lines.insert(1, f"# Key expires at: {expires_at} UTC")
+        private_key_str = '\n'.join(private_key_lines)
     
     # Calculate fingerprint (SHA256 of public key)
     fingerprint = hashlib.sha256(public_key_bytes).hexdigest()
@@ -76,13 +87,16 @@ def lambda_handler(event, context):
             key_type = body.get("key_type", "rsa")
             key_bits = int(body.get("key_bits", 2048))
             curve = body.get("curve", "P-256")
+            expires_at = body.get("expires_at")  # ISO 8601 UTC datetime
             
             logger.info(f"Processing request {request_id}: {key_type}")
+            if expires_at:
+                logger.info(f"Key will expire at: {expires_at}")
             
             # Generate keypair
             start_time = time.time()
             public_key, private_key, fingerprint = generate_keypair(
-                key_type, key_bits, curve
+                key_type, key_bits, curve, expires_at
             )
             duration = time.time() - start_time
             
@@ -97,8 +111,12 @@ def lambda_handler(event, context):
                 "private_key_b64": base64.b64encode(private_key.encode()).decode(),
                 "fingerprint": fingerprint,
                 "generated_at": datetime.utcnow().isoformat() + "Z",
-                "ttl": int(time.time()) + 86400  # 24 hours
+                "ttl": int(time.time()) + 86400  # 24 hours (DynamoDB deletion)
             }
+            
+            # Add expiration info if provided
+            if expires_at:
+                result["expires_at"] = expires_at
             
             # Add type-specific metadata
             if key_type == "rsa":

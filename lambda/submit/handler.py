@@ -28,6 +28,7 @@ def lambda_handler(event, context):
     key_type = body.get("key_type", "rsa")
     key_bits = body.get("key_bits", 2048)
     curve = body.get("curve", "P-256")
+    expires_at = body.get("expires_at")  # Optional: ISO 8601 UTC datetime
     
     # Validate inputs
     if key_type not in ["rsa", "ed25519", "ecdsa"]:
@@ -51,11 +52,25 @@ def lambda_handler(event, context):
             "body": json.dumps({"error": "Invalid curve. Must be P-256 or P-384 for ECDSA"})
         }
     
+    # Validate expires_at if provided
+    if expires_at:
+        try:
+            from datetime import datetime
+            # Parse ISO 8601 format: 2025-12-31T23:59:59Z
+            datetime.fromisoformat(expires_at.replace('Z', '+00:00'))
+        except (ValueError, AttributeError):
+            return {
+                "statusCode": 400,
+                "headers": {"Content-Type": "application/json"},
+                "body": json.dumps({"error": "Invalid expires_at format. Use ISO 8601 UTC: YYYY-MM-DDTHH:MM:SSZ"})
+            }
+    
     message = {
         "request_id": request_id,
         "key_type": key_type,
         "key_bits": key_bits,
-        "curve": curve
+        "curve": curve,
+        "expires_at": expires_at
     }
     
     try:
