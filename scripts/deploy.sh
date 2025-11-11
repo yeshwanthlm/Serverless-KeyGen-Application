@@ -1,9 +1,15 @@
 #!/bin/bash
 set -e
 
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+
 echo "=========================================="
 echo "Serverless Key Generator Deployment"
 echo "=========================================="
+echo ""
+echo "Project root: $PROJECT_ROOT"
 echo ""
 
 # Check prerequisites
@@ -29,7 +35,7 @@ echo ""
 
 # Step 1: Initialize Terraform
 echo "Step 1: Initializing Terraform..."
-cd terraform
+cd "$PROJECT_ROOT/terraform"
 terraform init
 echo ""
 

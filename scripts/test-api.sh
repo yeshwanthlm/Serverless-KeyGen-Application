@@ -1,8 +1,12 @@
 #!/bin/bash
 set -e
 
+# Get the directory where the script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
+
 # Get API endpoint from Terraform output
-cd terraform
+cd "$PROJECT_ROOT/terraform"
 API_ENDPOINT=$(terraform output -raw api_endpoint 2>/dev/null)
 
 if [ -z "$API_ENDPOINT" ]; then
