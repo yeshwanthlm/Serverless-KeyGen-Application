@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serverless Key Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.95em;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            font-size: 1em;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status {
+            margin: 20px 0;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: 500;
+            display: none;
+        }
+        
+        .status.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            display: block;
+        }
+        
+        .status.success {
+            background: #e8f5e9;
+            color: #388e3c;
+            display: block;
+        }
+        
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            display: block;
+        }
+        
+        .key-section {
+            margin-top: 30px;
+            display: none;
+        }
+        
+        .key-section.visible {
+            display: block;
+        }
+        
+        .key-section h3 {
+            color: #333;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .key-metadata {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        textarea {
+            width: 100%;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            resize: vertical;
+            background: #fafafa;
+        }
+        
+        .copy-btn {
+            background: #4caf50;
+            padding: 8px 16px;
+            font-size: 0.9em;
+            margin-top: 8px;
+            width: auto;
+        }
+        
+        .copy-btn:hover {
+            background: #45a049;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Serverless Key Generator</h1>
+        <p class="subtitle">Generate secure SSH and cryptographic keys on-demand</p>
+        
+        <div class="form-group">
+            <label for="keyType">Select Key Type:</label>
+            <select id="keyType">
+                <option value="rsa-2048">RSA 2048-bit (Standard)</option>
+                <option value="rsa-4096">RSA 4096-bit (High Security)</option>
+                <option value="ed25519">Ed25519 (Modern, Fast)</option>
+                <option value="ecdsa-P-256">ECDSA P-256 (Elliptic Curve)</option>
+                <option value="ecdsa-P-384">ECDSA P-384 (High Security EC)</option>
+            </select>
+        </div>
+        
+        <button id="generateBtn" onclick="generateKey()">
+            Generate Keypair
+        </button>
+        
+        <div id="status" class="status"></div>
+        
+        <div id="keySection" class="key-section">
+            <div id="metadata" class="key-metadata"></div>
+            
+            <h3>
+                Public Key
+                <button class="copy-btn" onclick="copyToClipboard('publicKey')">Copy</button>
+            </h3>
+            <textarea id="publicKey" rows="4" readonly></textarea>
+            
+            <h3 style="margin-top: 20px;">
+                Private Key
+                <button class="copy-btn" onclick="copyToClipboard('privateKey')">Copy</button>
+            </h3>
+            <textarea id="privateKey" rows="15" readonly></textarea>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = "${api_endpoint}";
+        
+        function showStatus(message, type) {
+            const status = document.getElementById("status");
+            status.textContent = message;
+            status.className = `status $${type}`;
+        }
+        
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        async function generateKey() {
+            const btn = document.getElementById("generateBtn");
+            const keySection = document.getElementById("keySection");
+            const select = document.getElementById("keyType").value;
+            
+            // Parse selection
+            const parts = select.split("-");
+            const keyType = parts[0];
+            const param = parts[1];
+            
+            let requestBody = { key_type: keyType };
+            
+            if (keyType === "rsa") {
+                requestBody.key_bits = parseInt(param);
+            } else if (keyType === "ecdsa") {
+                requestBody.curve = `$${param}-$${parts[2]}`;
+            }
+            
+            // Disable button and show loading
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Generating...';
+            keySection.classList.remove("visible");
+            showStatus("Submitting request...", "info");
+            
+            try {
+                // Submit request
+                const submitResponse = await fetch(`$${API_BASE}/keygen`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                if (!submitResponse.ok) {
+                    throw new Error(`HTTP $${submitResponse.status}: $${submitResponse.statusText}`);
+                }
+                
+                const submitData = await submitResponse.json();
+                const requestId = submitData.request_id;
+                
+                showStatus(`Request ID: $${requestId} - Waiting for processing...`, "info");
+                
+                // Poll for result
+                let attempts = 0;
+                const maxAttempts = 30;
+                
+                while (attempts < maxAttempts) {
+                    await sleep(2000);
+                    attempts++;
+                    
+                    const resultResponse = await fetch(`$${API_BASE}/result/$${requestId}`);
+                    const resultData = await resultResponse.json();
+                    
+                    if (resultData.status === "complete") {
+                        // Decode keys
+                        const publicKey = atob(resultData.public_key_b64);
+                        const privateKey = atob(resultData.private_key_b64);
+                        
+                        // Display results
+                        document.getElementById("publicKey").value = publicKey;
+                        document.getElementById("privateKey").value = privateKey;
+                        
+                        // Display metadata
+                        let metadata = `Type: $${resultData.key_type.toUpperCase()}`;
+                        if (resultData.key_bits) {
+                            metadata += ` | Bits: $${resultData.key_bits}`;
+                        }
+                        if (resultData.curve) {
+                            metadata += ` | Curve: $${resultData.curve}`;
+                        }
+                        metadata += ` | Generated: $${new Date(resultData.generated_at).toLocaleString()}`;
+                        metadata += ` | Fingerprint: $${resultData.fingerprint}`;
+                        
+                        document.getElementById("metadata").textContent = metadata;
+                        keySection.classList.add("visible");
+                        
+                        showStatus("✓ Keypair generated successfully!", "success");
+                        break;
+                    } else if (resultData.status === "error") {
+                        throw new Error(resultData.error || "Key generation failed");
+                    }
+                    
+                    showStatus(`Waiting for result... (attempt $${attempts}/$${maxAttempts})`, "info");
+                }
+                
+                if (attempts >= maxAttempts) {
+                    throw new Error("Timeout waiting for key generation");
+                }
+                
+            } catch (error) {
+                console.error("Error:", error);
+                showStatus(`Error: $${error.message}`, "error");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Generate Keypair";
+            }
+        }
+        
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            element.select();
+            document.execCommand("copy");
+            
+            // Visual feedback
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = "Copied!";
+            setTimeout(() => {
+                btn.textContent = originalText;
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
